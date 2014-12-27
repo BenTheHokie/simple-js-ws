@@ -3,19 +3,8 @@ import socket
 import sha
 from base64 import b64encode
 import re
-import binascii
+from wsparse import wsparse
 
-def hextobin(hexval):
-    '''
-    Takes a string representation of hex data with
-    arbitrary length and converts to string representation
-    of binary.  Includes padding 0s
-    '''
-    thelen = len(hexval)*4
-    binval = bin(int(hexval, 16))[2:]
-    while ((len(binval)) < thelen):
-        binval = '0' + binval
-    return binval
 
 def getSecKey(key):
     GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11' # This is a number specified by the standard (do not change)
@@ -30,30 +19,7 @@ def datahandler(data):
 	if data2['Upgrade'].lower()=='websocket':
 	    return wsug(data2) # if the client is looking for websocket verification, give it to them
     except KeyError:
-	hdata = binascii.b2a_hex(data) # get the hex data
-	bdata = hextobin(hdata) # convert to binary
-
-	binval2=''
-	for i in range(len(bdata)/4):
-	    binval2+=bdata[i*4:(i+1)*4]+','
-	ddict = {
-		'FIN': bdata[0],
-		'rsv1-3': bdata[1:4],
-		'opcode': hex(int(bdata[4:8],2)), # opcodes See https://developer.mozilla.org/en-US/docs/WebSockets/Writing_WebSocket_servers
-		'mask?': bdata[8], # boolean value of mask
-		'plen': int(bdata[9:16],2), # payload length
-		'mask': [ int(bdata[16:24],2) , int(bdata[24:32],2) , int(bdata[32:40],2) , int(bdata[40:48],2) ], # Mask values
-		'payload': bdata[48:] # the payload is the remainder of the data
-		}
-	plencr=[] # payload encrypted
-	for i in range(ddict['plen']):
-	    plencr.append(ddict['payload'][i*8:(i+1)*8]) # chop the payload into octets and add them to plencr
-	plencr=[int(b,2) for b in plencr] # convert to binary
-	pldecr=[] # payload decrypted
-	for i in range(len(plencr)):
-	    pldecr.append(plencr[i]^ddict['mask'][i % 4]) # unencrypt using XOR decryption with the mask
-	pltext=''.join([chr(i) for i in pldecr]) # convert to text
-	print pltext
+	print wsparse(data)['text']
 
 def wsug(data):
     response = [
