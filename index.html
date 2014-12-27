@@ -1,0 +1,15 @@
+<html>
+<body>
+
+<script type="text/javascript">
+socket= new WebSocket('ws://benw-rpi:8080');
+socket.onopen= function() {
+    socket.send('hello');
+};
+socket.onmessage= function(s) {
+    alert('got reply '+s);
+};
+</script>
+</body>
+</html>
+
