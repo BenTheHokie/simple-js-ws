@@ -50,9 +50,9 @@ class wsHandler(SocketServer.BaseRequestHandler):
 		if rdata['text'] == 'end':
 		    print "attempt end connection..."
 		    self.closed=True
-		    self.request.sendall('\x88\x02\x03\xF3')
+		    self.request.sendall('\x88\x02\x03\xe8')
 		elif rdata['text'][:5].lower() == 'echo:':
-		    self.request.sendall(wsunparse({'text':rdata['text'][6:]}))
+		    self.request.sendall(wsunparse({'opcode':8,'payload':rdata['text'][6:]}))
     
     def finish(self):
 	
