@@ -7,7 +7,7 @@ socket.onopen= function() {
     socket.send('hello');
 };
 socket.onmessage= function(s) {
-    alert('got reply '+s);
+    alert('got reply '+s.data);
 };
 </script>
 </body>

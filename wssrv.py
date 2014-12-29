@@ -3,7 +3,7 @@ import socket
 import sha
 from base64 import b64encode
 import re
-from wsparse import wsparse
+from wsparse import wsparse, wsunparse
 import SocketServer
 
 class wsHandler(SocketServer.BaseRequestHandler):
@@ -35,16 +35,24 @@ class wsHandler(SocketServer.BaseRequestHandler):
 
     def handle(self):
 	
-	while True:
+	while not self.closed:
 	    data = self.request.recv(1024)
 	    rdata = self.datahandler(data)
-	    if data[:3].lower() == 'get':
+	    print rdata
+	    if data[:3].lower() == 'get': # such kludge, many confuse, wow
 		self.request.sendall(rdata)
 	    elif rdata['opcode'] == '0x8':
+		self.request.sendall(wsunparse({'opcode':8,'payload':rdata['text'][:2]}))
 		self.request.close()
 		break
 	    elif rdata['opcode'] == '0x1':
 		print rdata['text']
+		if rdata['text'] == 'end':
+		    print "attempt end connection..."
+		    self.closed=True
+		    self.request.sendall('\x88\x02\x03\xF3')
+		elif rdata['text'][:5].lower() == 'echo:':
+		    self.request.sendall(wsunparse({'text':rdata['text'][6:]}))
     
     def finish(self):
 	
@@ -52,7 +60,7 @@ class wsHandler(SocketServer.BaseRequestHandler):
 
 
     def setup(self):
-	
+	self.closed = False
 	print "Opened connection from %s:%d" % (self.client_address[0] , self.client_address[1])
 
 if __name__ == '__main__':

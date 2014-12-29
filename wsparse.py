@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import binascii
+from random import getrandbits
 
 def hextobin(hexval):
     '''
@@ -55,11 +56,54 @@ def wsparse(data):
     plencr = [int(b,2) for b in plencr] # convert to binary
     
     pldecr = [] # payload decrypted
-    for i in range(len(plencr)):
-        pldecr.append(plencr[i] ^ rdict['mask'][i % 4]) # unencrypt using XOR decryption with the mask
+    if mask:
+	for i in range(len(plencr)):
+	    pldecr.append(plencr[i] ^ rdict['mask'][i % 4]) # unencrypt using XOR decryption with the mask
+    else:
+	pldecr = plencr[:]
     rdict['decrypted'] = '0x'+''.join([ hex(i)[2:] for i in pldecr ])
 
-    if rdict['opcode'] == '0x1':
+    if rdict['opcode'] in ('0x1','0x8'):
 	rdict['text'] = ''.join([chr(i) for i in pldecr]) # convert to text
 
     return rdict
+
+
+def wsunparse(data):
+
+    final = ''
+
+    mask = []
+    if 'mask' in data.keys():
+	from numbers import Number
+	if type(data['mask'] == list) and len(data['mask']) == 4:
+	    mask = data['mask']
+	elif data['mask']==True and (isinstance(data['mask'] , Number) or isinstance(data['mask'] , bool)):
+	    for i in range(4):
+		mask.append(int(getrandbits(8))) # Generate some random bits for the mask
+    
+    pl = ''
+
+    if data['opcode'] in ('0x8',8):
+	final += '\x88' # fin, close
+    else:
+	final += '\x81' # fin, text
+
+    plen = len(data['payload'])
+    if plen > 125:
+	raise
+
+    if mask:
+	itext = [ord(a) for a in list(data['payload'])]
+	for c in range(len(itext)):
+	    pl += chr(itext[c] ^ mask[c % 4])
+	final += chr(128 + plen) # turn on mask bit
+	final += ''.join([chr(c) for c in mask])
+    else:
+	pl = data['payload']
+	final += chr(plen)
+    
+    final += pl
+
+    print final
+    return final
