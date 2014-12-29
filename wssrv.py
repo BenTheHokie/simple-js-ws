@@ -66,5 +66,5 @@ class wsHandler(SocketServer.BaseRequestHandler):
 if __name__ == '__main__':
     host, port = 'localhost' , 8080
 
-    server = SocketServer.TCPServer((host, port), wsHandler)
+    server = SocketServer.ThreadingTCPServer((host, port), wsHandler)
     server.serve_forever()
